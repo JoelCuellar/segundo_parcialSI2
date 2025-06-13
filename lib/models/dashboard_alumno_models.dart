@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class MateriaRendimiento {
@@ -9,6 +8,8 @@ class MateriaRendimiento {
   final double examenesProm;
   final double tareasProm;
   final double asistenciaPct;
+  final double rendimiento;
+  final double notaProm;
 
   MateriaRendimiento({
     required this.materiaId,
@@ -18,6 +19,8 @@ class MateriaRendimiento {
     required this.examenesProm,
     required this.tareasProm,
     required this.asistenciaPct,
+    required this.rendimiento,
+    required this.notaProm
   });
 
   factory MateriaRendimiento.fromJson(Map<String, dynamic> json) {
@@ -29,6 +32,8 @@ class MateriaRendimiento {
       examenesProm: (json['examenes_prom'] ?? 0).toDouble(),
       tareasProm: (json['tareas_prom'] ?? 0).toDouble(),
       asistenciaPct: (json['asistencia_pct'] ?? 0).toDouble(),
+      rendimiento:  (json['rendimiento'] ?? 0).toDouble(),
+      notaProm:  (json['notaProm'] ?? 0).toDouble(),
     );
   }
 }

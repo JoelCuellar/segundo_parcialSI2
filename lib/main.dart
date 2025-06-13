@@ -9,11 +9,18 @@ import 'screens/dashboard_alumno_screen.dart';
 import 'services/dashboard_service.dart';
 import 'providers/auth_provider.dart';
 
+// Handler de background debe tener esta anotación
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print('📥 Notificación en background: ${message.notification?.title}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  // Configura handler para mensajes en segundo plano
+  // Registra el handler de background
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   runApp(
@@ -26,19 +33,50 @@ void main() async {
   );
 }
 
-// Requerido para mensajes en segundo plano
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  print('📥 Notificación en background: ${message.notification?.title}');
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+  @override
+  State<MyApp> createState() => _MyAppState();
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    _initFirebaseMessaging();
+  }
+
+  void _initFirebaseMessaging() async {
+    final messaging = FirebaseMessaging.instance;
+
+    // 1) Solicita permisos (Android 13+ y iOS)
+    final settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    print('Permisos notificaciones: ${settings.authorizationStatus}');
+
+    // 2) Obtén token FCM
+    final token = await messaging.getToken();
+    print('🔑 Token FCM: $token');
+    // TODO: envíalo a tu backend con el login
+
+    // 3) Listener para mensajes en foreground
+    FirebaseMessaging.onMessage.listen((msg) {
+      print('🔔 Foreground: ${msg.notification?.title}');
+      // Aquí podrías mostrar un diálogo o Snackbar si quieres
+    });
+
+    // 4) Listener cuando el usuario abre la notificación
+    FirebaseMessaging.onMessageOpenedApp.listen((msg) {
+      print('📲 Abrió notificación: ${msg.notification?.title}');
+      // Aquí podrías navegar a una pantalla específica
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    _initFirebaseMessaging(); // Configura listeners y token
-
     return MaterialApp(
       title: 'Sistema Educativo',
       theme: ThemeData(
@@ -49,58 +87,23 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
     );
   }
-
-  void _initFirebaseMessaging() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-    // Solicita permisos (solo en Android 13+ y iOS)
-    await messaging.requestPermission();
-
-    // Obtener token de dispositivo (lo puedes enviar a tu backend con el login)
-    final token = await messaging.getToken();
-    print('🔑 Token FCM: $token');
-
-    // Listener para notificaciones en primer plano
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('🔔 Notificación recibida en foreground: ${message.notification?.title}');
-    });
-
-    // Listener para cuando se toca la notificación y se abre la app
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('📲 Usuario abrió la notificación: ${message.notification?.title}');
-    });
-  }
-  
 }
+
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    
-    // Si el usuario está autenticado, verificamos su rol
-    if (authProvider.isAuthenticated) {
-      // Creamos el servicio de dashboard
-      final dashboardService = DashboardService(
-        baseUrl: 'https://parcial2-colegio-backend.onrender.com',
-        token: authProvider.userData!.token,
-      );
-      
-      // Si es tutor, mostramos el dashboard de tutor
-      if (authProvider.isTutor) {
-        return DashboardTutorScreen(
-          dashboardService: dashboardService,
-        );
-      } else {
-        // Si es alumno, mostramos el dashboard de alumno
-        return DashboardAlumnoScreen(
-          dashboardService: dashboardService,
-        );
-      }
-    }
-    
-    // Si no está autenticado, mostramos la pantalla de login
-    return const LoginScreen();
+    final auth = Provider.of<AuthProvider>(context);
+    if (!auth.isAuthenticated) return const LoginScreen();
+
+    final service = DashboardService(
+      baseUrl: 'https://parcial2-colegio-backend.onrender.com',
+      token: auth.userData!.token,
+    );
+
+    return auth.isTutor
+      ? DashboardTutorScreen(dashboardService: service)
+      : DashboardAlumnoScreen(dashboardService: service);
   }
 }

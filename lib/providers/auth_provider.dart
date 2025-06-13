@@ -73,7 +73,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String username, String password, String? token) async {
   setLoading(true);
 
   try {
@@ -83,6 +83,7 @@ class AuthProvider extends ChangeNotifier {
       body: json.encode({
         'username': username,
         'password': password,
+        'fb_token': token
       }),
     );
 

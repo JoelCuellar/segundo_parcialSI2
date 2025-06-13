@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-Future<Map<String, dynamic>> login(String username, String password) async {
+Future<Map<String, dynamic>> login(String username, String password, String token) async {
   final url = Uri.parse('https://parcial2-colegio-backend.onrender.com/login/'); 
 
   final response = await http.post(
     url,
     headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({'username': username, 'password': password}),
+    body: jsonEncode({'username': username, 'password': password,'fb_token': token}),
 
   );
 

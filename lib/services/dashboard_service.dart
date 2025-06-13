@@ -71,7 +71,7 @@ class DashboardService {
           'Content-Type': 'application/json',
         },
       );
-
+      print('📦 body: ${response.body}');
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data;
@@ -152,10 +152,7 @@ class DashboardService {
           });
         }
       }
-      
-      // If we don't have any materias data, leave it as an empty array
-      // No mock data for gestiones - leave as empty array
-      
+            
       return formattedData;
     } catch (e) {
       // If all else fails, return a minimal structure with empty data

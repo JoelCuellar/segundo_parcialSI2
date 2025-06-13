@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,10 +40,20 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // Solicita permisos (solo en Android 13+ y iOS)
+      await messaging.requestPermission();
+
+    // Obtener token de dispositivo (lo puedes enviar a tu backend con el login)
+      final token = await messaging.getToken();
       
+      print('🔑 Token FCM: $token');
+      print('Hola');
       final success = await authProvider.login(
         _emailController.text,
         _passwordController.text,
+        token
       );
       
       if (!success && mounted) {
