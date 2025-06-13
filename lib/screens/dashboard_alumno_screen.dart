@@ -253,34 +253,38 @@ class _DashboardAlumnoScreenState extends State<DashboardAlumnoScreen> with Sing
               color: colorMagenta,
             ),
           );
-        } else if (snapshot.hasError) {
+        } else if (snapshot.hasError || !snapshot.hasData) {
+          // Show a message when there's an error or no data
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(
-                  Icons.error_outline,
-                  color: colorNaranja,
+                  Icons.bar_chart,
+                  color: colorGrisClaro,
                   size: 60,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Error al cargar los datos de rendimiento',
+                  'No hay datos de rendimiento disponibles',
                   style: TextStyle(
                     color: colorGrisOscuro,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  snapshot.error.toString(),
-                  style: TextStyle(
-                    color: colorGrisMedio,
-                    fontSize: 14,
+                if (snapshot.hasError)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: TextStyle(
+                        color: colorGrisMedio,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
@@ -304,7 +308,16 @@ class _DashboardAlumnoScreenState extends State<DashboardAlumnoScreen> with Sing
               ],
             ),
           );
-        } else if (!snapshot.hasData) {
+        }
+
+        // Use the actual data from the API
+        final notasData = snapshot.data!;
+        
+        // Check if we have any data to display
+        final hasMaterias = (notasData['materias'] as List?)?.isNotEmpty ?? false;
+        final hasGestiones = (notasData['gestiones'] as List?)?.isNotEmpty ?? false;
+        
+        if (!hasMaterias && !hasGestiones) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -327,9 +340,6 @@ class _DashboardAlumnoScreenState extends State<DashboardAlumnoScreen> with Sing
             ),
           );
         }
-
-        // Use the actual data from the API
-        final notasData = snapshot.data!;
         
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -337,12 +347,15 @@ class _DashboardAlumnoScreenState extends State<DashboardAlumnoScreen> with Sing
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Gráfico de rendimiento por materias
-              RendimientoPorMateriasCard(notasData: notasData),
+              if (hasMaterias)
+                RendimientoPorMateriasCard(notasData: notasData),
               
-              const SizedBox(height: 16),
+              if (hasMaterias && hasGestiones)
+                const SizedBox(height: 16),
               
               // Gráfico de rendimiento por gestión
-              RendimientoPorGestionCard(notasData: notasData),
+              if (hasGestiones)
+                RendimientoPorGestionCard(notasData: notasData),
             ],
           ),
         );
@@ -416,6 +429,8 @@ class AlumnoInfoCard extends StatelessWidget {
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ],
                   ),
@@ -468,25 +483,29 @@ class AlumnoInfoCard extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 24),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: colorGrisMedio,
-                    fontSize: 12,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: colorGrisMedio,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: colorGrisOscuro,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      color: colorGrisOscuro,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -640,6 +659,8 @@ class ClasesHoyCard extends StatelessWidget {
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -648,6 +669,8 @@ class ClasesHoyCard extends StatelessWidget {
                                   color: colorGrisMedio,
                                   fontSize: 14,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -656,6 +679,8 @@ class ClasesHoyCard extends StatelessWidget {
                                   color: colorGrisClaro,
                                   fontSize: 12,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ],
                           ),
@@ -855,6 +880,8 @@ class MateriasBajoRendimientoCard extends StatelessWidget {
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                             Container(
@@ -922,25 +949,29 @@ class MateriasBajoRendimientoCard extends StatelessWidget {
         children: [
           Icon(icon, color: colorGrisMedio, size: 16),
           const SizedBox(width: 4),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: colorGrisClaro,
-                  fontSize: 12,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: colorGrisClaro,
+                    fontSize: 12,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  color: colorGrisOscuro,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: colorGrisOscuro,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -1079,6 +1110,8 @@ class UltimasTareasCard extends StatelessWidget {
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -1087,6 +1120,8 @@ class UltimasTareasCard extends StatelessWidget {
                                   color: colorGrisMedio,
                                   fontSize: 14,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -1095,6 +1130,8 @@ class UltimasTareasCard extends StatelessWidget {
                                   color: colorGrisClaro,
                                   fontSize: 12,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ],
                           ),
@@ -1272,6 +1309,8 @@ class UltimosExamenesCard extends StatelessWidget {
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -1280,6 +1319,8 @@ class UltimosExamenesCard extends StatelessWidget {
                                   color: colorGrisMedio,
                                   fontSize: 14,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -1288,6 +1329,8 @@ class UltimosExamenesCard extends StatelessWidget {
                                   color: colorGrisClaro,
                                   fontSize: 12,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ],
                           ),
@@ -1462,9 +1505,9 @@ class RendimientoPorMateriasCard extends StatelessWidget {
                                 getTitlesWidget: (value, meta) {
                                   String text = '';
                                   if (value.toInt() < materias.length) {
-                                    // Get first 3 letters of the subject name
+                                    // Get first 2 letters of the subject name to avoid overflow
                                     final nombre = materias[value.toInt()]['nombre'] ?? '';
-                                    text = nombre.length > 3 ? nombre.substring(0, 3) : nombre;
+                                    text = nombre.length > 2 ? nombre.substring(0, 2) : nombre;
                                   }
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 8),
@@ -1473,7 +1516,7 @@ class RendimientoPorMateriasCard extends StatelessWidget {
                                       style: const TextStyle(
                                         color: colorGrisMedio,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                        fontSize: 10, // Reduced font size
                                       ),
                                     ),
                                   );
@@ -1543,7 +1586,7 @@ class RendimientoPorMateriasCard extends StatelessWidget {
         BarChartRodData(
           toY: y1,
           color: colorMagenta,
-          width: 12,
+          width: 8, // Reduced width to avoid overflow
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(4),
@@ -1552,7 +1595,7 @@ class RendimientoPorMateriasCard extends StatelessWidget {
         BarChartRodData(
           toY: y2,
           color: colorCyan,
-          width: 12,
+          width: 8, // Reduced width to avoid overflow
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(4),
@@ -1699,8 +1742,10 @@ class RendimientoPorGestionCard extends StatelessWidget {
                                       style: const TextStyle(
                                         color: colorGrisMedio,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 10,
+                                        fontSize: 10, // Reduced font size
                                       ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
                                     ),
                                   );
                                 },
@@ -1769,7 +1814,7 @@ class RendimientoPorGestionCard extends StatelessWidget {
         BarChartRodData(
           toY: y1,
           color: colorMagenta,
-          width: 12,
+          width: 8, // Reduced width to avoid overflow
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(4),
@@ -1778,7 +1823,7 @@ class RendimientoPorGestionCard extends StatelessWidget {
         BarChartRodData(
           toY: y2,
           color: colorCyan,
-          width: 12,
+          width: 8, // Reduced width to avoid overflow
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(4),
@@ -1805,20 +1850,19 @@ class _LegendItem extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 16,
-          height: 16,
+          width: 12,
+          height: 12,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
         Text(
           label,
           style: const TextStyle(
             color: colorGrisOscuro,
             fontSize: 12,
-            fontWeight: FontWeight.w500,
           ),
         ),
       ],

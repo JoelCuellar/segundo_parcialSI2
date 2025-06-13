@@ -86,80 +86,84 @@ class DashboardService {
   // Método para obtener notas por gestión
   Future<Map<String, dynamic>> getNotasPorGestion() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/academico/notas-por-gestion/'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+      // First try to get data from the specific endpoint
+      try {
+        final response = await http.get(
+          Uri.parse('$baseUrl/academico/notas-por-gestion/'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        
-        // If the API doesn't return the expected format, create a compatible structure
-        if (!data.containsKey('materias') || !data.containsKey('gestiones')) {
-          // Create a structure with the available data
-          final Map<String, dynamic> formattedData = {
-            'materias': [],
-            'gestiones': []
-          };
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          return data;
+        }
+      } catch (e) {
+        // If the specific endpoint fails, we'll fall back to using the main dashboard data
+        print('Endpoint notas-por-gestion no disponible: $e');
+      }
+      
+      // Fallback: Use the main dashboard data to create chart data
+      final dashboardResponse = await getDashboardAlumnoData();
+      
+      // Create a structure with the available data
+      final Map<String, dynamic> formattedData = {
+        'materias': [],
+        'gestiones': []
+      };
+      
+      // Extract data from materias_bajo_rendimiento to create materias data
+      final List<dynamic> materiasBajoRendimiento = dashboardResponse['materias_bajo_rendimiento'] ?? [];
+      
+      // Process materias bajo rendimiento
+      for (final materia in materiasBajoRendimiento) {
+        if (materia is Map) {
+          final nombreMateria = materia['materia']?.toString() ?? 'Sin nombre';
           
-          // Extract materias data from the response if available
-          if (data.containsKey('materias_rendimiento')) {
-            formattedData['materias'] = data['materias_rendimiento'];
-          } else {
-            // Create sample data based on the materias list
-            final List<String> materias = [
-              'Matemáticas', 'Lenguaje', 'Ciencias Naturales', 'Ciencias Sociales',
-              'Educación Física', 'Música', 'Arte', 'Inglés', 'Tecnología',
-              'Historia', 'Geografía', 'Biología', 'Química'
-            ];
-            
-            // Use data from materias_bajo_rendimiento if available
-            if (data.containsKey('materias_bajo_rendimiento')) {
-              formattedData['materias'] = data['materias_bajo_rendimiento'].map((materia) {
-                return {
-                  'nombre': materia['materia'] ?? 'Sin nombre',
-                  'nota_final': materia['nota_prom'] ?? 0,
-                  'rendimiento': materia['rendimiento'] ?? 0,
-                };
-              }).toList();
-            } else {
-              // Create sample data for testing
-              formattedData['materias'] = materias.take(5).map((nombre) {
-                return {
-                  'nombre': nombre,
-                  'nota_final': 70.0,
-                  'rendimiento': 65.0,
-                };
-              }).toList();
+          // Extract or calculate metrics
+          double examenesProm = 0;
+          if (materia['examenes_prom'] != null) {
+            if (materia['examenes_prom'] is num) {
+              examenesProm = (materia['examenes_prom'] as num).toDouble();
+            } else if (materia['examenes_prom'] is String) {
+              examenesProm = double.tryParse(materia['examenes_prom']) ?? 0;
             }
           }
           
-          // Extract gestiones data from the response if available
-          if (data.containsKey('gestiones_rendimiento')) {
-            formattedData['gestiones'] = data['gestiones_rendimiento'];
-          } else {
-            // Create sample data for gestiones
-            formattedData['gestiones'] = [
-              {'nombre': '2022-1', 'nota_final': 75.0, 'rendimiento': 70.0},
-              {'nombre': '2022-2', 'nota_final': 80.0, 'rendimiento': 75.0},
-              {'nombre': '2022-3', 'nota_final': 78.0, 'rendimiento': 72.0},
-              {'nombre': '2023-1', 'nota_final': 82.0, 'rendimiento': 78.0},
-              {'nombre': '2023-2', 'nota_final': 85.0, 'rendimiento': 80.0},
-            ];
+          double tareasProm = 0;
+          if (materia['tareas_prom'] != null) {
+            if (materia['tareas_prom'] is num) {
+              tareasProm = (materia['tareas_prom'] as num).toDouble();
+            } else if (materia['tareas_prom'] is String) {
+              tareasProm = double.tryParse(materia['tareas_prom']) ?? 0;
+            }
           }
           
-          return formattedData;
+          // Calculate nota_final as average of examenes and tareas
+          final notaFinal = (examenesProm + tareasProm) / 2;
+          
+          // Add to materias list
+          formattedData['materias'].add({
+            'nombre': nombreMateria,
+            'nota_final': notaFinal,
+            'rendimiento': notaFinal * 0.9, // Estimate rendimiento as slightly lower than nota
+          });
         }
-        
-        return data;
-      } else {
-        throw Exception('Error al cargar las notas: ${response.statusCode}');
       }
+      
+      // If we don't have any materias data, leave it as an empty array
+      // No mock data for gestiones - leave as empty array
+      
+      return formattedData;
     } catch (e) {
-      throw Exception('Error al cargar las notas: $e');
+      // If all else fails, return a minimal structure with empty data
+      print('Error al generar datos para gráficos: $e');
+      return {
+        'materias': [],
+        'gestiones': []
+      };
     }
   }
 }
