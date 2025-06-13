@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "498912218900",
+    "project_id": "colegio-cddad",
+    "storage_bucket": "colegio-cddad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:498912218900:android:8b4e64c6f3223ce085bc01",
+        "android_client_info": {
+          "package_name": "com.example.segundo_parcialsi2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAB-zzX8jDRtxuHar1UEg0ayKQTPLtvphI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
